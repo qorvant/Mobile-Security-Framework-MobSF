@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MobSF-Win</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header>
+      <h1>MobSF-Win</h1>
+      <p class="sub">Mobile Security Framework — Windows 桌面端（静态分析）</p>
+    </header>
+
+    <section id="drop" class="drop">
+      <p>将 APK 拖拽到此处，或在下方粘贴路径后点击「分析」。</p>
+      <div class="row">
+        <input id="path" type="text" placeholder="C:\\path\\to\\app.apk" />
+        <button id="analyze">分析</button>
+      </div>
+      <div class="row decompile">
+        <select id="tool">
+          <option value="apktool">apktool（资源 + smali）</option>
+          <option value="jadx">jadx（Java/Kotlin 源码）</option>
+        </select>
+        <input id="outdir" type="text" placeholder="反编译输出目录" />
+        <button id="decompile">反编译</button>
+      </div>
+      <p id="status" class="status"></p>
+    </section>
+
+    <main id="result" class="result hidden"></main>
+
+    <script src="main.js"></script>
+  </body>
+</html>

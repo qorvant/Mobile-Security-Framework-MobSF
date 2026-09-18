@@ -1,0 +1,92 @@
+:root {
+  --bg: #0f1115;
+  --panel: #171a21;
+  --panel2: #1f2430;
+  --fg: #e6e9ef;
+  --muted: #8b93a7;
+  --accent: #4f8cff;
+  --ok: #3fb950;
+  --warn: #d29922;
+  --err: #f85149;
+  --border: #2a2f3a;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+}
+header {
+  padding: 18px 24px 6px;
+  border-bottom: 1px solid var(--border);
+}
+header h1 { margin: 0; font-size: 22px; letter-spacing: 0.5px; }
+header .sub { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+.drop {
+  margin: 18px 24px;
+  padding: 18px;
+  background: var(--panel);
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+}
+.drop p { margin: 0 0 12px; color: var(--muted); }
+.row { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+input[type="text"], select {
+  flex: 1;
+  min-width: 220px;
+  padding: 9px 12px;
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--fg);
+  font-size: 14px;
+}
+button {
+  padding: 9px 18px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+}
+button:hover { filter: brightness(1.08); }
+.decompile input { flex: 1.2; }
+.status { min-height: 18px; font-size: 13px; }
+.status.ok { color: var(--ok); }
+.status.err { color: var(--err); }
+.result { margin: 0 24px 30px; }
+.result.hidden { display: none; }
+.block {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+.block h3 { margin: 0 0 10px; font-size: 15px; color: var(--accent); }
+.kv { display: flex; gap: 10px; padding: 3px 0; font-size: 14px; }
+.kv .k { color: var(--muted); width: 140px; flex: none; }
+.kv .v { font-family: "Cascadia Code", Consolas, monospace; word-break: break-all; }
+.comps { margin: 0; padding-left: 18px; }
+.comps li { margin: 4px 0; font-size: 13px; }
+.comps code {
+  background: var(--panel2);
+  padding: 1px 6px;
+  border-radius: 5px;
+  font-family: "Cascadia Code", Consolas, monospace;
+}
+.tag {
+  display: inline-block;
+  font-size: 11px;
+  padding: 1px 7px;
+  border-radius: 10px;
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  margin-left: 4px;
+}
+.tag.ok { color: var(--ok); }
+.tag.warn { color: var(--warn); }
+.tag.perm { color: var(--muted); }
+.muted { color: var(--muted); }

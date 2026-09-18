@@ -1,0 +1,77 @@
+# MobSF-Win
+
+将 [MobSF](https://github.com/MobSF/Mobile-Security-Framework-MobSF) 的**静态分析**能力移植到 Windows 桌面端的实验性项目。
+
+架构选择（与用户确认）：
+
+- **Tauri (WebView2)** 作为桌面 GUI 壳 —— 复用 Web 技术栈，体积小。
+- **单 exe 内嵌引擎** —— GUI 与分析引擎在同一个可执行文件内，通过 Tauri 的
+  `invoke` 通道分层，部署最简单。
+- **聚焦 StaticAnalyzer** —— 用 Rust **调用（而非重写）** 外部工具
+  （apktool / jadx）完成反编译；纯 Rust 部分负责无需外部工具的解析。
+
+## 组件
+
+```
+mobsf-win/
+├── engine/        # 纯 Rust 分析引擎（不依赖 Tauri，可独立测试）
+│   └── src/
+│       ├── axml.rs   # 二进制 AndroidManifest.xml (AXML) 解析器（纯 Rust）
+│       ├── manifest.rs
+│       ├── apk.rs     # APK(zip) 读取
+│       └── tools.rs   # apktool / jadx 子进程编排
+├── app/           # Tauri 壳（编译为单 exe）
+├── src/           # 前端（HTML/JS/CSS，WebView2 渲染）
+└── scripts/       # 图标生成等辅助脚本
+```
+
+## 已落地能力
+
+- ✅ **APK 清单解析**：优先调用官方 `aapt dump badging`（兼容 AAPT1/AAPT2
+  所有二进制 XML 版本），解析出包名、版本、SDK 级别、权限列表、
+  Activity/Service/Receiver/Provider 组件及其 `exported` 标志。
+  纯 Rust 的 `AndroidManifest.xml`(AXML) 解析器作为 AAPT1 的尽力回退。
+- ✅ 列出 APK 内所有条目。
+- ✅ 通过子进程调用 apktool / jadx 进行反编译（参数以列表形式传递，避免命令注入）。
+
+## 构建与运行
+
+前置：Rust 工具链、Node.js（仅用于前端资源，Tauri v2 构建期需要）、
+Windows 10+（自带 WebView2）。
+
+```powershell
+cd mobsf-win
+node scripts/gen_icon.mjs          # 生成 app/src-tauri/icons/icon.ico
+cargo install tauri-cli --version "^2"   # 若尚未安装 Tauri CLI
+cargo tauri build                  # 产物为单个 .exe（NSIS 安装包）
+```
+
+不装 Tauri CLI 也可直接用 cargo 编译（首次会下载 WebView2 运行时等依赖）：
+
+```powershell
+cargo build --release
+```
+
+## 放置外部工具（反编译功能需要）
+
+- `apktool.jar` 放到 `mobsf-win/tools/apktool.jar`（或 `apktool.jar`），Java 23 已验证可用。
+- `jadx` 放到系统 `PATH`（或 `mobsf-win/tools/jadx/bin/jadx.bat`）。
+
+未配置工具时，纯 Rust 的清单解析与分析仍然可用。
+
+## 测试
+
+```powershell
+cargo test -p mobsf-engine
+```
+
+该测试会用仓库内 `mobsf/DynamicAnalyzer/.../*.apk` 真实固件校验 AXML 解析器。
+
+## 当前范围与后续
+
+这只是迁移的第一步。后续可逐步接入：
+
+- 证书 / 签名信息解析（META-INF）
+- `libsast` 规则匹配的 Rust 化或子进程化
+- 恶意代码检测模型的推理接入
+- 动态分析（Frida）的 Windows 适配（工作量最大）
