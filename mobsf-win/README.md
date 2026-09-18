@@ -59,8 +59,27 @@ cargo build --release -p mobsf-win --features custom-protocol
 
 ## 放置外部工具（反编译功能需要）
 
-- `apktool.jar` 放到 `mobsf-win/tools/apktool.jar`（或 `apktool.jar`），Java 23 已验证可用。
-- `jadx` 放到系统 `PATH`（或 `mobsf-win/tools/jadx/bin/jadx.bat`）。
+反编译需要两个 Java 工具：`apktool`（资源 + smali）与 `jadx`（Java/Kotlin 源码）。
+它们**不会**随仓库发布，需要另行准备（两者都需要系统 `PATH` 上有 `java`）：
+
+```powershell
+cd mobsf-win
+powershell -ExecutionPolicy Bypass -File scripts/download_tools.ps1
+```
+
+脚本会把工具下载到 `mobsf-win/tools/`（已 git-ignore）：
+
+- `tools/apktool.jar`
+- `tools/jadx/bin/jadx.bat`
+
+也可手动放置，支持以下任一位置（自动探测，相对路径基于启动目录，也支持放在 exe 同目录）：
+
+- `jadx` 在 `PATH`，或 `tools/jadx/bin/jadx[.bat][.exe]`
+- `apktool.jar` 在 `tools/apktool.jar`，或当前目录的 `apktool.jar`
+
+> 探测逻辑见 `engine/src/tools.rs` 的 `discover_tools()`。注意：之前版本的
+> 探测只搜 `PATH`，会把 `tools/` 下的 `jadx.bat` 误判为"not found on PATH"，
+> 现已修复（同时会回退到 exe 所在目录）。
 
 未配置工具时，纯 Rust 的清单解析与分析仍然可用。
 

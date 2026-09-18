@@ -73,6 +73,10 @@ classes-error.zip
 
 #MobSF Files
 mobsf/debug.log
+
+# MobSF-Win downloaded external tools (jadx/apktool) — fetched by
+# mobsf-win/scripts/download_tools.ps1, not committed.
+mobsf-win/tools/
 mobsf/uploads/
 mobsf/db.sqlite3
 mobsf/secret

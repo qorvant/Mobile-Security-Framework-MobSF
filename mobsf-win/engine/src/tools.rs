@@ -42,27 +42,73 @@ pub struct DecompileResult {
 }
 
 /// Look for the external tools in a few conventional places and on PATH.
+///
+/// Each candidate is tried in order:
+///   1. as a path relative to the current directory (or absolute),
+///   2. resolved via `PATH`,
+///   3. as a path relative to the *executable's own directory*, so a portable
+///      single-exe deployment can ship `tools/` next to the `.exe`.
+///
+/// The previous implementation only called [`which`] for every candidate, which
+/// meant relative paths such as `./tools/jadx/bin/jadx.bat` were silently never
+/// checked — so a tool dropped into the documented `tools/` directory was
+/// reported as "not found on PATH".
 pub fn discover_tools() -> ToolConfig {
     let mut cfg = ToolConfig::default();
-    for cand in ["aapt", "aapt2", "aapt.exe", "aapt2.exe"] {
-        if let Some(p) = which(cand) {
-            cfg.aapt = Some(p);
-            break;
-        }
-    }
-    for cand in ["./tools/apktool.jar", "./apktool.jar", "apktool.jar"] {
-        if Path::new(cand).exists() {
-            cfg.apktool_jar = Some(PathBuf::from(cand));
-            break;
-        }
-    }
-    for cand in ["jadx", "jadx.bat", "./tools/jadx/bin/jadx.bat", "./tools/jadx/bin/jadx"] {
-        if let Some(p) = which(cand) {
-            cfg.jadx = Some(p);
-            break;
-        }
-    }
+    cfg.aapt = find_tool(&["aapt", "aapt2", "aapt.exe", "aapt2.exe"]);
+    cfg.apktool_jar = find_file(&["./tools/apktool.jar", "./apktool.jar", "apktool.jar"]);
+    cfg.jadx = find_tool(&[
+        "jadx",
+        "jadx.exe",
+        "jadx.bat",
+        "./tools/jadx/bin/jadx",
+        "./tools/jadx/bin/jadx.exe",
+        "./tools/jadx/bin/jadx.bat",
+    ]);
     cfg
+}
+
+/// Resolve a tool executable: filesystem path first, then `PATH`, then the
+/// directory of the current executable.
+fn find_tool(cands: &[&str]) -> Option<PathBuf> {
+    for c in cands {
+        if Path::new(c).exists() {
+            return Some(PathBuf::from(c));
+        }
+    }
+    for c in cands {
+        if let Some(p) = which(c) {
+            return Some(p);
+        }
+    }
+    find_next_to_exe(cands)
+}
+
+/// Resolve a data file (e.g. a `.jar`): filesystem path, then the directory of
+/// the current executable. Jars are shipped with the app, not installed on PATH.
+fn find_file(cands: &[&str]) -> Option<PathBuf> {
+    for c in cands {
+        if Path::new(c).exists() {
+            return Some(PathBuf::from(c));
+        }
+    }
+    find_next_to_exe(cands)
+}
+
+/// Try each candidate relative to the executable's own directory. Leading
+/// `./`, `/` or `\` are stripped so the layout is the same whether the app is
+/// run from its own folder or installed elsewhere.
+fn find_next_to_exe(cands: &[&str]) -> Option<PathBuf> {
+    let exe = std::env::current_exe().ok()?;
+    let dir = exe.parent()?;
+    for c in cands {
+        let rel = c.trim_start_matches(['.', '/', '\\']);
+        let p = dir.join(rel);
+        if p.exists() {
+            return Some(p);
+        }
+    }
+    None
 }
 
 fn which(name: &str) -> Option<PathBuf> {
@@ -153,4 +199,34 @@ pub fn run_jadx(apk: &Path, out: &Path, cfg: &ToolConfig) -> Result<DecompileRes
         stdout: String::from_utf8_lossy(&status.stdout).into_owned(),
         stderr: String::from_utf8_lossy(&status.stderr).into_owned(),
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn which_resolves_executable_on_path() {
+        // Drop a dummy `jadx.exe` into a temp dir, prepend it to PATH, and make
+        // sure `which` finds the bare name through it. This guards the helper
+        // used by `find_tool` (and therefore `discover_tools`).
+        let tmp = std::env::temp_dir().join(format!("mobsf-win-test-{}", std::process::id()));
+        std::fs::create_dir_all(&tmp).unwrap();
+        let dummy = tmp.join("jadx.exe");
+        std::fs::write(&dummy, b"").unwrap();
+
+        let original = std::env::var_os("PATH").unwrap_or_default();
+        let new_path = std::env::join_paths(
+            std::iter::once(tmp.clone()).chain(std::env::split_paths(&original)),
+        )
+        .unwrap();
+        std::env::set_var("PATH", &new_path);
+        let found = which("jadx");
+        std::env::set_var("PATH", &original);
+
+        let _ = std::fs::remove_file(&dummy);
+        let _ = std::fs::remove_dir(&tmp);
+
+        assert_eq!(found, Some(dummy));
+    }
 }
