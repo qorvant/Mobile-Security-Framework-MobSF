@@ -46,11 +46,16 @@ cargo install tauri-cli --version "^2"   # 若尚未安装 Tauri CLI
 cargo tauri build                  # 产物为单个 .exe（NSIS 安装包）
 ```
 
-不装 Tauri CLI 也可直接用 cargo 编译（首次会下载 WebView2 运行时等依赖）：
+不装 Tauri CLI 也可直接用 cargo 编译（首次会下载 WebView2 运行时等依赖）。
+**必须显式带上 `custom-protocol` 特性**，否则 `tauri/build.rs` 会判定
+`dev = true`，前端资源不内嵌，WebView 会去加载 `devUrl` 而报
+`ERR_CONNECTION_REFUSED`：
 
 ```powershell
-cargo build --release
+cargo build --release -p mobsf-win --features custom-protocol
 ```
+
+也可以直接运行根目录的 `build.bat`（已包含上述特性与图标生成）。
 
 ## 放置外部工具（反编译功能需要）
 

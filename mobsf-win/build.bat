@@ -30,7 +30,10 @@ if /I "%1"=="installer" (
 )
 
 echo [2/3] Building release binary (first run downloads/compiles deps; may take minutes)...
-cargo build --release -p mobsf-win
+REM --features custom-protocol is REQUIRED: without it tauri/build.rs sets
+REM `dev = true`, the frontend is not embedded and the WebView loads devUrl
+REM (http://localhost:5173) -> ERR_CONNECTION_REFUSED in the release exe.
+cargo build --release -p mobsf-win --features custom-protocol
 if %errorlevel% neq 0 (
     echo.
     echo Build failed. See errors above.
